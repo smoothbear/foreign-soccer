@@ -16,7 +16,7 @@ func CrawlingTodayData() {
 	go getPages(baseUrl, c)
 }
 
-func getPages(baseUrl string, c chan<- data.TodaySoccerSchedule) int {
+func getPages(baseUrl string, c chan<- data.TodaySoccerSchedule) {
 	res, err := http.Get(baseUrl)
 
 	checkErr(err)
@@ -27,6 +27,15 @@ func getPages(baseUrl string, c chan<- data.TodaySoccerSchedule) int {
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	checkErr(err)
 
+	doc.Find(".월간 일정/결과").Each(func(i int, s *goquery.Selection) {
+		c <- data.TodaySoccerSchedule{
+			data.GameSchedule{
+				Place: s.Find("#_monthlyScheduleList").Find(".time_place").Text()
+			}
+		}
+	})
+
+	return
 }
 
 func checkErr(err error) {
