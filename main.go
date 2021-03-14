@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/chromedp/chromedp"
+	"io/ioutil"
 	"log"
-	"time"
+	"os"
+	times "time"
 )
 
 type SoccerDay struct {
@@ -31,8 +34,7 @@ func main() {
 	)
 	defer cancel()
 
-	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+	ctx, cancel = context.WithTimeout(ctx, 15*times.Second)
 
 	var soccerDay []SoccerDay = make([]SoccerDay, 31)
 	var dayIndex = 0
@@ -54,6 +56,14 @@ func main() {
 		)
 
 		if err != nil {
+			cancel()
+
+			ctx, cancel = chromedp.NewContext(
+				context.Background(),
+				chromedp.WithLogf(log.Printf),
+			)
+
+			ctx, cancel = context.WithTimeout(ctx, 15*times.Second)
 
 			_ = chromedp.Run(ctx,
 				chromedp.Navigate(URL),
@@ -63,7 +73,7 @@ func main() {
 				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_left > span.name", index), &leftTeam),
 				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_left > span.score", index), &leftScore),
 				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_right > span.name", index), &rightTeam),
-				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_right > span.score", index), &rightTeam),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_right > span.score", index), &rightScore),
 			)
 
 			soccerSchedule := SoccerSchedule{
@@ -75,12 +85,15 @@ func main() {
 				RightScore: rightScore,
 			}
 
-			soccerDay[dayIndex].SoccerSchedule = append(soccerDay[dayIndex].SoccerSchedule, soccerSchedule)
+			fmt.Println(soccerSchedule)
+
 			index++
+			soccerDay[dayIndex].SoccerSchedule = append(soccerDay[dayIndex].SoccerSchedule, soccerSchedule)
+
 			continue
 		}
 
-		_ = chromedp.Run(ctx,
+		err = chromedp.Run(ctx,
 			chromedp.Navigate(URL),
 			chromedp.WaitVisible("#wrap"),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td.time_place > div > span.time", index), &time),
@@ -88,8 +101,17 @@ func main() {
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_left > span.name", index), &leftTeam),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_left > span.score", index), &leftScore),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.name", index), &rightTeam),
-			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.score", index), &rightTeam),
+			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.score", index), &rightScore),
 		)
+
+		if err != nil {
+			fmt.Println(index)
+			index++
+			continue
+		}
+
+		dayIndex++
+		soccerDay = append(soccerDay, SoccerDay{Day: day})
 
 		soccerSchedule := SoccerSchedule{
 			Time:       time,
@@ -100,15 +122,23 @@ func main() {
 			RightScore: rightScore,
 		}
 
-		soccerDay = append(soccerDay, SoccerDay{Day: day})
-		dayIndex++
+		fmt.Println(day)
 		soccerDay[dayIndex].SoccerSchedule = append(soccerDay[dayIndex].SoccerSchedule, soccerSchedule)
 
 		if dayIndex > 30 {
 			break
 		}
+
 		index++
 
 		log.Print(soccerDay[dayIndex])
+	}
+
+	doc, _ := json.Marshal(soccerDay)
+
+	err := ioutil.WriteFile("./data.json", doc, os.FileMode(0644))
+
+	if err != nil {
+		panic(err)
 	}
 }
