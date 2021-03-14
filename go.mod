@@ -1,12 +1,9 @@
-module smooth-bear.live
+module crawling_test
 
-go 1.15
+go 1.13
 
 require (
-	github.com/VividCortex/mysqlerr v0.0.0-20201215173831-4c396ae82aac
-	github.com/go-playground/validator/v10 v10.4.1
-	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gorilla/mux v1.8.0
-	github.com/jinzhu/gorm v1.9.16
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	github.com/fedesog/webdriver v0.0.0-20180606182539-99f36c92eaef // indirect
+	github.com/sclevine/agouti v3.0.0+incompatible // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 )

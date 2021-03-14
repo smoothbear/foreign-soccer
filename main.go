@@ -2,33 +2,36 @@ package main
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/gorilla/mux"
-	"smooth-bear.live/lib/database"
-	"smooth-bear.live/lib/database/access"
-	"smooth-bear.live/lib/handler"
+	"github.com/sclevine/agouti"
 )
 
+const scheduleUrl = "https://www.foxsports.com/scores/soccer/"
+
 func main() {
-	db, err := database.ConnectToMysql()
+	driver := agouti.ChromeDriver(agouti.ChromeOptions("args", []string{"--headless", "--disable-gpu", "--no-sandbox"}), agouti.Debug)
+
+	err := driver.Start()
+	checkErr(err)
+
+	page, err := driver.NewPage()
+	checkErr(err)
+
+	err = page.Navigate(scheduleUrl)
 
 	if err != nil {
-		log.Fatalf("db connect fail, error: %v", err)
+		log.Fatal(err)
 	}
 
-	database.Migrate(db)
+	log.Println(page.FindByID("sched-container").Text())
 
-	accessManage, err := database.NewAccessorManage(access.Default(db))
+	defer driver.Stop()
+
+	return
+}
+
+func checkErr(err error) {
 	if err != nil {
-		log.Fatalf("db accessor create fail, error: %v", err)
+		log.Fatalln(err)
 	}
-
-	// Router Initialize
-	router := mux.NewRouter()
-	defaultHandler := handler.NewDefault(&accessManage)
-
-	router.HandleFunc("/user", defaultHandler.CreateNewUser)
-
-	log.Fatal(http.ListenAndServe(":8080", router))
 }
