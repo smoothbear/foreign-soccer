@@ -36,7 +36,7 @@ func main() {
 
 	var soccerDay []SoccerDay = make([]SoccerDay, 31)
 	var dayIndex = 0
-	var index = 0
+	var index = 1
 
 	for {
 		var day string
@@ -51,42 +51,64 @@ func main() {
 			chromedp.Navigate(URL),
 			chromedp.WaitVisible("#wrap"),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > th > div > em", index), &day),
+		)
+
+		if err != nil {
+
+			_ = chromedp.Run(ctx,
+				chromedp.Navigate(URL),
+				chromedp.WaitVisible("#wrap"),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td.time_place > div > span.time", index), &time),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td.time_place > div > span.place", index), &place),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_left > span.name", index), &leftTeam),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_left > span.score", index), &leftScore),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_right > span.name", index), &rightTeam),
+				chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(2) > div > span.team_right > span.score", index), &rightTeam),
+			)
+
+			soccerSchedule := SoccerSchedule{
+				Time:       time,
+				Place:      place,
+				LeftTeam:   leftTeam,
+				RightTeam:  rightTeam,
+				LeftScore:  leftScore,
+				RightScore: rightScore,
+			}
+
+			soccerDay[dayIndex].SoccerSchedule = append(soccerDay[dayIndex].SoccerSchedule, soccerSchedule)
+			index++
+			continue
+		}
+
+		_ = chromedp.Run(ctx,
+			chromedp.Navigate(URL),
+			chromedp.WaitVisible("#wrap"),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td.time_place > div > span.time", index), &time),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td.time_place > div > span.place", index), &place),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_left > span.name", index), &leftTeam),
 			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_left > span.score", index), &leftScore),
-			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.name", index), &leftScore),
-			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.score", index), &leftScore),
+			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.name", index), &rightTeam),
+			chromedp.Text(fmt.Sprintf("#_monthlyScheduleList > tr:nth-child(%d) > td:nth-child(3) > div > span.team_right > span.score", index), &rightTeam),
 		)
 
-		if err != nil {
-			log.Print(err)
-		}
-
 		soccerSchedule := SoccerSchedule{
-			Time: time,
-			Place: place,
-			LeftTeam: leftTeam,
-			RightTeam: rightTeam,
-			LeftScore: leftScore,
+			Time:       time,
+			Place:      place,
+			LeftTeam:   leftTeam,
+			RightTeam:  rightTeam,
+			LeftScore:  leftScore,
 			RightScore: rightScore,
 		}
 
-		log.Print(soccerSchedule)
-
-		if index > 0 && day == "" {
-			soccerDay[index].SoccerSchedule = append(soccerDay[index].SoccerSchedule, soccerSchedule)
-		} else {
-			soccerDay = append(soccerDay, SoccerDay{Day: day})
-			index++
-			soccerDay[index].SoccerSchedule = append(soccerDay[index].SoccerSchedule, soccerSchedule)
-		}
+		soccerDay = append(soccerDay, SoccerDay{Day: day})
+		dayIndex++
+		soccerDay[dayIndex].SoccerSchedule = append(soccerDay[dayIndex].SoccerSchedule, soccerSchedule)
 
 		if dayIndex > 30 {
 			break
 		}
-		dayIndex++
-	}
+		index++
 
-	log.Print(soccerDay)
+		log.Print(soccerDay[dayIndex])
+	}
 }
